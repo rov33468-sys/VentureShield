@@ -8,11 +8,17 @@ import { DecisionInput } from "@/components/DecisionInput";
 import { PredictionDashboard } from "@/components/PredictionDashboard";
 import { CompetitorAnalysis } from "@/components/CompetitorAnalysis";
 import { SimulationReports } from "@/components/SimulationReports";
+import { Login } from "@/components/Login";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<'home' | 'input' | 'dashboard' | 'competitor' | 'simulation'>('home');
   const [decisionData, setDecisionData] = useState<any>(null);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
 
   const handleStartAnalysis = () => {
     setCurrentScreen('input');
@@ -47,6 +53,11 @@ const Index = () => {
     setCurrentScreen('home');
     setDecisionData(null);
   };
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   if (currentScreen === 'input') {
     return <DecisionInput onNext={handleDecisionSubmit} />;
