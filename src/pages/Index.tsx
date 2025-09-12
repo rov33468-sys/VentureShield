@@ -9,15 +9,26 @@ import { PredictionDashboard } from "@/components/PredictionDashboard";
 import { CompetitorAnalysis } from "@/components/CompetitorAnalysis";
 import { SimulationReports } from "@/components/SimulationReports";
 import { Login } from "@/components/Login";
+import { Tutorial } from "@/components/Tutorial";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<'home' | 'input' | 'dashboard' | 'competitor' | 'simulation'>('home');
   const [decisionData, setDecisionData] = useState<any>(null);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
+    setShowTutorial(true);
+  };
+
+  const handleTutorialComplete = () => {
+    setShowTutorial(false);
+  };
+
+  const handleTutorialSkip = () => {
+    setShowTutorial(false);
   };
 
   const handleStartAnalysis = () => {
@@ -57,6 +68,11 @@ const Index = () => {
   // Show login screen if not authenticated
   if (!isAuthenticated) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  // Show tutorial after login
+  if (showTutorial) {
+    return <Tutorial onComplete={handleTutorialComplete} onSkip={handleTutorialSkip} />;
   }
 
   if (currentScreen === 'input') {
