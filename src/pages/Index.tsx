@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
+import LandingPage from "@/components/LandingPage";
 import AnalysisModules from "@/components/AnalysisModules";
 import BusinessDashboard from "@/components/BusinessDashboard";
 import DecisionHistoryLog from "@/components/DecisionHistoryLog";
@@ -13,10 +14,15 @@ import { Tutorial } from "@/components/Tutorial";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
+  const [showLanding, setShowLanding] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<'home' | 'input' | 'dashboard' | 'competitor' | 'simulation'>('home');
   const [decisionData, setDecisionData] = useState<any>(null);
+
+  const handleGetStarted = () => {
+    setShowLanding(false);
+  };
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -64,6 +70,11 @@ const Index = () => {
     setCurrentScreen('home');
     setDecisionData(null);
   };
+
+  // Show landing page first
+  if (showLanding) {
+    return <LandingPage onGetStarted={handleGetStarted} />;
+  }
 
   // Show login screen if not authenticated
   if (!isAuthenticated) {
