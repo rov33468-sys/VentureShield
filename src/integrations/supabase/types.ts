@@ -17,38 +17,59 @@ export type Database = {
       predictions: {
         Row: {
           cash_flow: number | null
+          company_name: string | null
+          confidence: number | null
           created_at: string | null
           debt_ratio: number | null
+          employee_turnover: number | null
           expenses: number | null
           id: string
-          recommendations: string | null
+          industry: string | null
+          innovation_score: number | null
+          market_growth: number | null
+          recommendations: string[] | null
           revenue: number | null
           risk_level: string | null
           risk_score: number | null
+          summary: string | null
           user_id: string
         }
         Insert: {
           cash_flow?: number | null
+          company_name?: string | null
+          confidence?: number | null
           created_at?: string | null
           debt_ratio?: number | null
+          employee_turnover?: number | null
           expenses?: number | null
           id?: string
-          recommendations?: string | null
+          industry?: string | null
+          innovation_score?: number | null
+          market_growth?: number | null
+          recommendations?: string[] | null
           revenue?: number | null
           risk_level?: string | null
           risk_score?: number | null
+          summary?: string | null
           user_id: string
         }
         Update: {
           cash_flow?: number | null
+          company_name?: string | null
+          confidence?: number | null
           created_at?: string | null
           debt_ratio?: number | null
+          employee_turnover?: number | null
           expenses?: number | null
           id?: string
-          recommendations?: string | null
+          industry?: string | null
+          innovation_score?: number | null
+          market_growth?: number | null
+          recommendations?: string[] | null
           revenue?: number | null
           risk_level?: string | null
           risk_score?: number | null
+          summary?: string | null
           user_id?: string
         }
         Relationships: []
