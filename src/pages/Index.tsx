@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
-import LandingPage from "@/components/LandingPage";
 import AnalysisModules from "@/components/AnalysisModules";
 import BusinessDashboard from "@/components/BusinessDashboard";
 import DecisionHistoryLog from "@/components/DecisionHistoryLog";
@@ -9,33 +10,19 @@ import { DecisionInput } from "@/components/DecisionInput";
 import { PredictionDashboard } from "@/components/PredictionDashboard";
 import { CompetitorAnalysis } from "@/components/CompetitorAnalysis";
 import { SimulationReports } from "@/components/SimulationReports";
-import { Login } from "@/components/Login";
-import { Tutorial } from "@/components/Tutorial";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
-  const [showLanding, setShowLanding] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [currentScreen, setCurrentScreen] = useState<'home' | 'input' | 'dashboard' | 'competitor' | 'simulation'>('home');
   const [decisionData, setDecisionData] = useState<any>(null);
 
-  const handleGetStarted = () => {
-    setShowLanding(false);
-  };
-
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    setShowTutorial(true);
-  };
-
-  const handleTutorialComplete = () => {
-    setShowTutorial(false);
-  };
-
-  const handleTutorialSkip = () => {
-    setShowTutorial(false);
-  };
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
 
   const handleStartAnalysis = () => {
     setCurrentScreen('input');
@@ -71,19 +58,15 @@ const Index = () => {
     setDecisionData(null);
   };
 
-  // Show landing page first
-  if (showLanding) {
-    return <LandingPage onGetStarted={handleGetStarted} />;
-  }
-
-  // Show login screen if not authenticated
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
-  }
-
-  // Show tutorial after login
-  if (showTutorial) {
-    return <Tutorial onComplete={handleTutorialComplete} onSkip={handleTutorialSkip} />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   if (currentScreen === 'input') {
