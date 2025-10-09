@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
 import { 
   ArrowRight, 
   Brain, 
@@ -14,9 +13,11 @@ import {
   Target
 } from "lucide-react";
 
-function LandingPage() {
-  const navigate = useNavigate();
+interface LandingPageProps {
+  onGetStarted: () => void;
+}
 
+const LandingPage = ({ onGetStarted }: LandingPageProps) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -28,18 +29,13 @@ function LandingPage() {
                 <Brain className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Oracle Risk Navigator</h1>
+                <h1 className="text-xl font-bold text-foreground">FailSafe AI</h1>
                 <p className="text-xs text-muted-foreground">Business Prediction Platform</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate('/login')}>
-                Login
-              </Button>
-              <Button onClick={() => navigate('/signup')} size="lg">
-                Sign Up
-              </Button>
-            </div>
+            <Button onClick={onGetStarted} size="sm" className="shadow-lg">
+              Get Started <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
@@ -59,9 +55,9 @@ function LandingPage() {
             </Badge>
             
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-foreground leading-tight">
-              Oracle Risk Navigator
+              Predict Business Failures
               <span className="block bg-gradient-to-r from-accent to-warning bg-clip-text text-transparent">
-                AI-Powered Business Prediction
+                Before They Happen
               </span>
             </h1>
             
@@ -72,10 +68,17 @@ function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <Button 
                 size="lg" 
-                onClick={() => navigate('/signup')}
+                onClick={onGetStarted}
                 className="bg-gradient-to-r from-accent to-warning hover:opacity-90 text-accent-foreground px-8 py-4 text-lg font-semibold shadow-accent transition-all duration-300 hover:scale-105"
               >
                 Start Free Analysis <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="px-8 py-4 text-lg font-medium border-2 hover:bg-secondary transition-all duration-300"
+              >
+                Watch Demo
               </Button>
             </div>
 
@@ -121,7 +124,7 @@ function LandingPage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
-                Why Business Leaders Choose Oracle Risk Navigator
+                Why Business Leaders Choose FailSafe AI
               </h2>
               <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
                 Comprehensive AI-powered analysis that transforms complex data into actionable insights for smarter business decisions.
@@ -217,11 +220,11 @@ function LandingPage() {
               Ready to Prevent Your Next Business Failure?
             </h2>
             <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
-              Join 10,000+ business leaders who use Oracle Risk Navigator to make smarter decisions and prevent costly mistakes.
+              Join 10,000+ business leaders who use FailSafe AI to make smarter decisions and prevent costly mistakes.
             </p>
             <Button 
               size="lg" 
-              onClick={() => navigate('/signup')}
+              onClick={onGetStarted}
               className="bg-accent hover:bg-accent/90 text-accent-foreground px-8 py-4 text-lg font-semibold shadow-lg hover:scale-105 transition-all duration-300"
             >
               Start Your Free Analysis <ArrowRight className="ml-2 h-5 w-5" />
@@ -232,6 +235,6 @@ function LandingPage() {
       </section>
     </div>
   );
-}
+};
 
 export default LandingPage;
