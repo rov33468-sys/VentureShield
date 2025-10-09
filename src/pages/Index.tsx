@@ -2,60 +2,33 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Header from "@/components/Header";
-import HeroSection from "@/components/HeroSection";
-import AnalysisModules from "@/components/AnalysisModules";
-import BusinessDashboard from "@/components/BusinessDashboard";
-import DecisionHistoryLog from "@/components/DecisionHistoryLog";
-import { DecisionInput } from "@/components/DecisionInput";
-import { PredictionDashboard } from "@/components/PredictionDashboard";
-import { CompetitorAnalysis } from "@/components/CompetitorAnalysis";
-import { SimulationReports } from "@/components/SimulationReports";
+import RiskPredictionForm from "@/components/RiskPredictionForm";
+import PredictionResults from "@/components/PredictionResults";
+import PredictionHistory from "@/components/PredictionHistory";
+import LandingPage from "@/components/LandingPage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [currentScreen, setCurrentScreen] = useState<'home' | 'input' | 'dashboard' | 'competitor' | 'simulation'>('home');
-  const [decisionData, setDecisionData] = useState<any>(null);
+  const [predictionResult, setPredictionResult] = useState<any>(null);
+  const [refreshHistory, setRefreshHistory] = useState(0);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/login');
-    }
-  }, [user, loading, navigate]);
+  // Show landing page if not authenticated
+  if (!loading && !user) {
+    return <LandingPage />;
+  }
 
-  const handleStartAnalysis = () => {
-    setCurrentScreen('input');
+  const handlePredictionComplete = (result: any) => {
+    setPredictionResult(result);
   };
 
-  const handleDecisionSubmit = (data: any) => {
-    setDecisionData(data);
-    setCurrentScreen('dashboard');
+  const handleSaveComplete = () => {
+    setRefreshHistory(prev => prev + 1);
   };
 
-  const handleNavigateToCompetitor = () => {
-    setCurrentScreen('competitor');
-  };
-
-  const handleNavigateToSimulation = () => {
-    setCurrentScreen('simulation');
-  };
-
-  const handleBackToDashboard = () => {
-    setCurrentScreen('dashboard');
-  };
-
-  const handleBackToCompetitor = () => {
-    setCurrentScreen('competitor');
-  };
-
-  const handleBackToInput = () => {
-    setCurrentScreen('input');
-  };
-
-  const handleRestart = () => {
-    setCurrentScreen('home');
-    setDecisionData(null);
+  const handleNewPrediction = () => {
+    setPredictionResult(null);
   };
 
   if (loading) {
@@ -69,88 +42,44 @@ const Index = () => {
     );
   }
 
-  if (currentScreen === 'input') {
-    return <DecisionInput onNext={handleDecisionSubmit} />;
-  }
-
-  if (currentScreen === 'dashboard') {
-    return (
-      <PredictionDashboard
-        decisionData={decisionData}
-        onNext={handleNavigateToCompetitor}
-        onBack={handleBackToInput}
-      />
-    );
-  }
-
-  if (currentScreen === 'competitor') {
-    return (
-      <CompetitorAnalysis
-        decisionData={decisionData}
-        onNext={handleNavigateToSimulation}
-        onBack={handleBackToDashboard}
-      />
-    );
-  }
-
-  if (currentScreen === 'simulation') {
-    return (
-      <SimulationReports
-        decisionData={decisionData}
-        onBack={handleBackToCompetitor}
-        onRestart={handleRestart}
-      />
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main>
-        <HeroSection onStartAnalysis={handleStartAnalysis} />
-        
-        {/* Main Application Tabs */}
-        <section className="py-12 bg-background">
-          <div className="container">
-            <Tabs defaultValue="dashboard" className="space-y-8">
-              <div className="text-center mb-8">
-                <TabsList className="grid w-full max-w-xl mx-auto grid-cols-3">
-                  <TabsTrigger value="dashboard" className="text-sm">Live Dashboard</TabsTrigger>
-                  <TabsTrigger value="analysis" className="text-sm">Analysis Modules</TabsTrigger>
-                  <TabsTrigger value="history" className="text-sm">Decision History</TabsTrigger>
-                </TabsList>
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold mb-2">Oracle Risk Navigator</h1>
+          <p className="text-muted-foreground">Welcome back, {user?.email}</p>
+        </div>
+
+        <Tabs defaultValue="dashboard" className="space-y-8">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard" className="space-y-6">
+            {!predictionResult ? (
+              <RiskPredictionForm onPredictionComplete={handlePredictionComplete} />
+            ) : (
+              <div className="space-y-4">
+                <PredictionResults 
+                  result={predictionResult} 
+                  onSaveComplete={handleSaveComplete}
+                />
+                <button
+                  onClick={handleNewPrediction}
+                  className="text-sm text-primary hover:underline"
+                >
+                  ← New Prediction
+                </button>
               </div>
+            )}
+          </TabsContent>
 
-              <TabsContent value="dashboard">
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <h2 className="text-3xl font-bold mb-4">Dynamic Business Dashboard</h2>
-                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                      Real-time analytics, predictive modeling, and strategic insights for data-driven decision making.
-                    </p>
-                  </div>
-                  <BusinessDashboard />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="analysis">
-                <AnalysisModules />
-              </TabsContent>
-
-              <TabsContent value="history">
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <h2 className="text-3xl font-bold mb-4">Decision History & Learning</h2>
-                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                      Track prediction accuracy, learn from outcomes, and continuously improve decision-making reliability.
-                    </p>
-                  </div>
-                  <DecisionHistoryLog />
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </section>
+          <TabsContent value="history">
+            <PredictionHistory key={refreshHistory} />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
