@@ -1,49 +1,67 @@
-import { Brain, LogOut, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Brain, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 
 const Header = () => {
   const { user, signOut } = useAuth();
 
   return (
-    <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-card">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-          <div className="bg-primary/10 p-2 rounded-lg">
-            <Brain className="w-6 h-6 text-primary" />
+    <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <div className="container flex h-16 items-center justify-between">
+        <Link to="/" className="flex items-center space-x-2">
+          <div className="flex items-center justify-center w-10 h-10 bg-primary rounded-lg">
+            <Brain className="h-6 w-6 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Oracle Risk Navigator
-          </span>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold text-foreground">Failure Prediction Oracle</h1>
+            <p className="text-xs text-muted-foreground">Advanced Business Decision Support</p>
+          </div>
         </Link>
         
-        {user && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2">
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">{user.email}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => signOut()} className="text-destructive cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" />
+        <nav className="hidden md:flex items-center space-x-6">
+          <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Features
+          </a>
+          <a href="#analysis" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Analysis
+          </a>
+          <a href="#insights" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Insights
+          </a>
+        </nav>
+
+        <div className="flex items-center space-x-4">
+          {user ? (
+            <>
+              <span className="text-sm text-muted-foreground hidden md:inline">
+                {user.email}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={signOut}
+                className="border-primary/20 text-primary hover:bg-primary/5"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
                 Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="border-primary/20 text-primary hover:bg-primary/5">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-accent">
+                  Get Started
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
