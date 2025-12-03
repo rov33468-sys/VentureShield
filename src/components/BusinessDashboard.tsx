@@ -30,6 +30,8 @@ import {
   Calendar
 } from "lucide-react";
 import { useState } from "react";
+import RiskScoreGauge from "./RiskScoreGauge";
+import RecommendationCards from "./RecommendationCards";
 
 const BusinessDashboard = () => {
   const [selectedTimeframe, setSelectedTimeframe] = useState("6M");
@@ -77,6 +79,31 @@ const BusinessDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Real-time Risk Score Gauges */}
+      <Card className="bg-gradient-to-br from-background to-secondary/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" />
+            Real-time Risk Assessment
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <RiskScoreGauge score={currentMetrics.successProbability} label="Success Rate" size="md" />
+            <RiskScoreGauge score={100 - currentMetrics.riskLevel} label="Safety Score" size="md" />
+            <RiskScoreGauge score={78} label="Market Confidence" size="md" />
+            <RiskScoreGauge score={85} label="Financial Health" size="md" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Recommendations */}
+      <Card>
+        <CardContent className="pt-6">
+          <RecommendationCards />
+        </CardContent>
+      </Card>
+
       {/* Key Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
