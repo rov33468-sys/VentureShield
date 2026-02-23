@@ -10,6 +10,8 @@ import { DecisionInput } from "@/components/DecisionInput";
 import { PredictionDashboard } from "@/components/PredictionDashboard";
 import { CompetitorAnalysis } from "@/components/CompetitorAnalysis";
 import { SimulationReports } from "@/components/SimulationReports";
+import { AIChatbot } from "@/components/AIChatbot";
+import { BusinessSearch } from "@/components/BusinessSearch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
@@ -17,6 +19,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [currentScreen, setCurrentScreen] = useState<'home' | 'input' | 'dashboard' | 'competitor' | 'simulation'>('home');
   const [decisionData, setDecisionData] = useState<any>(null);
+  const [searchUnlocked, setSearchUnlocked] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -108,6 +111,20 @@ const Index = () => {
       <Header />
       <main>
         <HeroSection onStartAnalysis={handleStartAnalysis} />
+
+        {/* AI Chatbot & Business Search */}
+        <section className="py-12 bg-background">
+          <div className="container max-w-4xl mx-auto space-y-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold mb-3 text-foreground">Talk to Oracle</h2>
+              <p className="text-muted-foreground max-w-xl mx-auto">
+                Our AI strategist will learn about your vision, then unlock personalized business discovery tools.
+              </p>
+            </div>
+            <AIChatbot onSearchUnlocked={() => setSearchUnlocked(true)} />
+            {searchUnlocked && <BusinessSearch />}
+          </div>
+        </section>
         
         {/* Main Application Tabs */}
         <section className="py-12 bg-background">

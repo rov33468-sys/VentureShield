@@ -2,3 +2,9 @@ project_id = "ademkmutqadxocfuypnk"
 
 [functions.predict]
 verify_jwt = false
+
+[functions.chat]
+verify_jwt = false
+
+[functions.business-search]
+verify_jwt = false
