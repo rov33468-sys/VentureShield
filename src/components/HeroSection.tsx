@@ -39,7 +39,7 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
             >
               Start Analysis <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button variant="outline" size="lg" className="px-8 py-3 font-medium border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10 transition-all duration-300">
+            <Button variant="outline" size="lg" className="px-8 py-3 font-medium border-primary-foreground/20 text-primary-foreground transition-all duration-300 bg-secondary-foreground">
               View Demo
             </Button>
           </div>
