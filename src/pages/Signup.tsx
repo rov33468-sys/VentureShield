@@ -50,7 +50,7 @@ export default function Signup() {
       } else {
         toast({
           title: "Account created!",
-          description: "Welcome to Failure Prediction Oracle",
+          description: "Welcome to VentureShield",
         });
         navigate('/');
       }
@@ -70,7 +70,7 @@ export default function Signup() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>Sign up for Failure Prediction Oracle</CardDescription>
+          <CardDescription>Sign up for VentureShield</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
