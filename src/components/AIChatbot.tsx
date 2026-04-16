@@ -194,7 +194,7 @@ export function AIChatbot({ onSearchUnlocked }: AIChatbotProps) {
             <Bot className="h-5 w-5 text-accent" />
           </div>
           <div>
-            <span className="text-foreground">Oracle AI Strategist</span>
+            <span className="text-foreground">VentureShield AI Strategist</span>
             <p className="text-xs text-muted-foreground font-normal mt-0.5">
               {searchUnlocked ? (
                 <span className="flex items-center gap-1 text-accent">
