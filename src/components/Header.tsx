@@ -14,7 +14,7 @@ const Header = () => {
             <Brain className="h-6 w-6 text-primary-foreground" />
           </div>
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold text-foreground">Failure Prediction Oracle</h1>
+            <h1 className="text-lg font-bold text-foreground">VentureShield</h1>
             <p className="text-xs text-muted-foreground">Advanced Business Decision Support</p>
           </div>
         </Link>

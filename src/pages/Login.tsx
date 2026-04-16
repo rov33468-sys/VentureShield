@@ -69,7 +69,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Login to Failure Prediction Oracle</CardDescription>
+          <CardDescription>Login to VentureShield</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
