@@ -262,7 +262,7 @@ Analyze this business and provide your assessment.`;
   } catch (error) {
     console.error('Error in predict function:', error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      error: 'An unexpected error occurred' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
