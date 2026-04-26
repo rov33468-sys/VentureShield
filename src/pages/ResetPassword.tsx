@@ -26,6 +26,7 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionState, setSessionState] = useState<SessionState>('checking');
+  const [recoveryEmail, setRecoveryEmail] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
