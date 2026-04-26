@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -225,7 +225,7 @@ Analyze this business and provide your assessment.`;
 
     // Save prediction to database
     const predictionData = {
-      user_id: user.id,
+      user_id: userId,
       company_name: companyData?.company_name || null,
       industry: companyData?.industry || null,
       revenue: companyData?.revenue || null,
