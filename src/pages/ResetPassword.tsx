@@ -26,6 +26,7 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionState, setSessionState] = useState<SessionState>('checking');
+  const [recoveryEmail, setRecoveryEmail] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,6 +38,7 @@ export default function ResetPassword() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
         resolved = true;
+        if (session?.user?.email) setRecoveryEmail(session.user.email);
         setSessionState('valid');
       }
     });
@@ -45,6 +47,7 @@ export default function ResetPassword() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         resolved = true;
+        if (session.user?.email) setRecoveryEmail(session.user.email);
         setSessionState('valid');
       }
     });
@@ -157,7 +160,10 @@ export default function ResetPassword() {
                 </Alert>
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                <Link to="/forgot-password" className="w-full">
+                <Link
+                  to={recoveryEmail ? `/forgot-password?email=${encodeURIComponent(recoveryEmail)}` : '/forgot-password'}
+                  className="w-full"
+                >
                   <Button className="w-full gradient-accent text-accent-foreground font-semibold shadow-accent hover:shadow-glow transition-smooth">
                     Request new link
                   </Button>

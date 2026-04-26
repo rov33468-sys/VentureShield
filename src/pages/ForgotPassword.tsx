@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,11 +15,18 @@ const schema = z.object({
 });
 
 export default function ForgotPassword() {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const { toast } = useToast();
+
+  // Prefill email from query string (e.g. when redirected from an expired reset link).
+  useEffect(() => {
+    const prefill = searchParams.get('email');
+    if (prefill) setEmail(prefill);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
