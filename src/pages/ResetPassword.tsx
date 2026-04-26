@@ -38,6 +38,7 @@ export default function ResetPassword() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
         resolved = true;
+        if (session?.user?.email) setRecoveryEmail(session.user.email);
         setSessionState('valid');
       }
     });
@@ -46,6 +47,7 @@ export default function ResetPassword() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         resolved = true;
+        if (session.user?.email) setRecoveryEmail(session.user.email);
         setSessionState('valid');
       }
     });
