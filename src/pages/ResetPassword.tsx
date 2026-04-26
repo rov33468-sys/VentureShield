@@ -160,7 +160,10 @@ export default function ResetPassword() {
                 </Alert>
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
-                <Link to="/forgot-password" className="w-full">
+                <Link
+                  to={recoveryEmail ? `/forgot-password?email=${encodeURIComponent(recoveryEmail)}` : '/forgot-password'}
+                  className="w-full"
+                >
                   <Button className="w-full gradient-accent text-accent-foreground font-semibold shadow-accent hover:shadow-glow transition-smooth">
                     Request new link
                   </Button>
