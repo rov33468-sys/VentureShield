@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,9 +10,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth check
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -21,17 +20,18 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claimsData.claims.sub;
 
     const { query } = await req.json();
 
@@ -58,10 +58,7 @@ serve(async (req) => {
             role: "system",
             content: `You are a business opportunity researcher. Given a search query, return 4-6 realistic business opportunities as JSON.`,
           },
-          {
-            role: "user",
-            content: `Find business opportunities for: "${query.trim()}"`,
-          },
+          { role: "user", content: `Find business opportunities for: "${query.trim()}"` },
         ],
         tools: [
           {
@@ -77,12 +74,12 @@ serve(async (req) => {
                     items: {
                       type: "object",
                       properties: {
-                        name: { type: "string", description: "Business opportunity name" },
-                        industry: { type: "string", description: "Industry category" },
-                        opportunity: { type: "string", description: "1-2 sentence description of the opportunity" },
-                        marketSize: { type: "string", description: "Estimated market size e.g. '$2B'" },
-                        competition: { type: "string", description: "Competition level e.g. 'Low', 'Moderate', 'High'" },
-                        investmentRange: { type: "string", description: "Investment needed e.g. '$10K-$50K'" },
+                        name: { type: "string" },
+                        industry: { type: "string" },
+                        opportunity: { type: "string" },
+                        marketSize: { type: "string" },
+                        competition: { type: "string" },
+                        investmentRange: { type: "string" },
                         growthPotential: { type: "string", enum: ["High", "Medium", "Low"] },
                       },
                       required: ["name", "industry", "opportunity", "marketSize", "competition", "investmentRange", "growthPotential"],
@@ -118,16 +115,32 @@ serve(async (req) => {
 
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-
     if (!toolCall?.function?.arguments) {
       throw new Error("No results from AI");
     }
 
     const parsed = JSON.parse(toolCall.function.arguments);
 
-    return new Response(JSON.stringify(parsed), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Persist search
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: saved, error: saveErr } = await adminClient
+      .from("business_searches")
+      .insert({
+        user_id: userId,
+        query: query.trim(),
+        results: parsed.results ?? [],
+      })
+      .select("id, created_at")
+      .single();
+    if (saveErr) console.error("Failed to save business search:", saveErr);
+
+    return new Response(
+      JSON.stringify({ ...parsed, id: saved?.id, created_at: saved?.created_at }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("business-search error:", e);
     return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {

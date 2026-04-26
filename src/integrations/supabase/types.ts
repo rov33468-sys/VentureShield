@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_searches: {
+        Row: {
+          created_at: string
+          id: string
+          query: string
+          results: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          query: string
+          results?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          query?: string
+          results?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          search_unlocked: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          search_unlocked?: boolean
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          search_unlocked?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       predictions: {
         Row: {
           cash_flow: number | null
@@ -95,6 +181,45 @@ export type Database = {
           full_name?: string
           id?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sentiment_analyses: {
+        Row: {
+          business_implications: string | null
+          confidence: number
+          created_at: string
+          emotions: Json
+          id: string
+          input_text: string
+          key_phrases: Json
+          overall_sentiment: string
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          business_implications?: string | null
+          confidence: number
+          created_at?: string
+          emotions?: Json
+          id?: string
+          input_text: string
+          key_phrases?: Json
+          overall_sentiment: string
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          business_implications?: string | null
+          confidence?: number
+          created_at?: string
+          emotions?: Json
+          id?: string
+          input_text?: string
+          key_phrases?: Json
+          overall_sentiment?: string
+          summary?: string | null
+          user_id?: string
         }
         Relationships: []
       }

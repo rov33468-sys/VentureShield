@@ -15,12 +15,19 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required').max(100, 'Password is too long'),
 });
 
+const GoogleIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+    <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.2 1.4-1.7 4.1-5.4 4.1-3.3 0-5.9-2.7-5.9-6.1S8.7 6 12 6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.5 14.6 2.5 12 2.5 6.7 2.5 2.5 6.7 2.5 12S6.7 21.5 12 21.5c6.9 0 9.5-4.8 9.5-7.4 0-.5 0-.9-.1-1.3H12z"/>
+  </svg>
+);
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, user } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { signIn, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -142,7 +149,7 @@ export default function Login() {
             <CardFooter className="flex flex-col gap-4">
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || googleLoading}
                 className="w-full gradient-accent text-accent-foreground font-semibold shadow-accent hover:shadow-glow transition-smooth group"
               >
                 {loading ? (
@@ -157,6 +164,41 @@ export default function Login() {
                   </>
                 )}
               </Button>
+
+              <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border/50" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loading || googleLoading}
+                onClick={async () => {
+                  setError('');
+                  setGoogleLoading(true);
+                  const { error: gErr } = await signInWithGoogle();
+                  if (gErr) {
+                    setError(gErr.message ?? 'Google sign-in failed');
+                    setGoogleLoading(false);
+                  }
+                }}
+                className="w-full bg-background/40 border-border/60 hover:bg-background/60 transition-smooth"
+              >
+                {googleLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <GoogleIcon />
+                    <span className="ml-2">Continue with Google</span>
+                  </>
+                )}
+              </Button>
+
               <p className="text-sm text-muted-foreground text-center">
                 Don't have an account?{' '}
                 <Link to="/signup" className="text-accent font-medium hover:underline">

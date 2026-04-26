@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,9 +10,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth check
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -21,17 +20,18 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claimsData.claims.sub;
 
     const { text } = await req.json();
 
@@ -83,10 +83,7 @@ serve(async (req) => {
                     type: "string",
                     enum: ["very_positive", "positive", "neutral", "negative", "very_negative"],
                   },
-                  confidence: {
-                    type: "number",
-                    description: "Confidence score 0-100",
-                  },
+                  confidence: { type: "number", description: "Confidence score 0-100" },
                   emotions: {
                     type: "array",
                     items: {
@@ -98,7 +95,6 @@ serve(async (req) => {
                       required: ["emotion", "intensity"],
                       additionalProperties: false,
                     },
-                    description: "Top 3-5 detected emotions with intensity",
                   },
                   key_phrases: {
                     type: "array",
@@ -111,16 +107,9 @@ serve(async (req) => {
                       required: ["phrase", "sentiment"],
                       additionalProperties: false,
                     },
-                    description: "Key phrases driving the sentiment",
                   },
-                  summary: {
-                    type: "string",
-                    description: "2-3 sentence analysis summary",
-                  },
-                  business_implications: {
-                    type: "string",
-                    description: "What this sentiment means for business strategy",
-                  },
+                  summary: { type: "string" },
+                  business_implications: { type: "string" },
                 },
                 required: ["overall_sentiment", "confidence", "emotions", "key_phrases", "summary", "business_implications"],
                 additionalProperties: false,
@@ -165,9 +154,32 @@ serve(async (req) => {
 
     const sentiment = JSON.parse(toolCall.function.arguments);
 
-    return new Response(JSON.stringify(sentiment), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Persist analysis
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: saved, error: saveErr } = await adminClient
+      .from("sentiment_analyses")
+      .insert({
+        user_id: userId,
+        input_text: text.trim(),
+        overall_sentiment: sentiment.overall_sentiment,
+        confidence: sentiment.confidence,
+        emotions: sentiment.emotions,
+        key_phrases: sentiment.key_phrases,
+        summary: sentiment.summary,
+        business_implications: sentiment.business_implications,
+      })
+      .select("id, created_at")
+      .single();
+
+    if (saveErr) console.error("Failed to save sentiment:", saveErr);
+
+    return new Response(
+      JSON.stringify({ ...sentiment, id: saved?.id, created_at: saved?.created_at }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("sentiment error:", e);
     return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
