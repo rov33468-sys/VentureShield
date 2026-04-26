@@ -149,7 +149,7 @@ export default function Login() {
             <CardFooter className="flex flex-col gap-4">
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || googleLoading}
                 className="w-full gradient-accent text-accent-foreground font-semibold shadow-accent hover:shadow-glow transition-smooth group"
               >
                 {loading ? (
@@ -164,6 +164,41 @@ export default function Login() {
                   </>
                 )}
               </Button>
+
+              <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border/50" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">or</span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loading || googleLoading}
+                onClick={async () => {
+                  setError('');
+                  setGoogleLoading(true);
+                  const { error: gErr } = await signInWithGoogle();
+                  if (gErr) {
+                    setError(gErr.message ?? 'Google sign-in failed');
+                    setGoogleLoading(false);
+                  }
+                }}
+                className="w-full bg-background/40 border-border/60 hover:bg-background/60 transition-smooth"
+              >
+                {googleLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <GoogleIcon />
+                    <span className="ml-2">Continue with Google</span>
+                  </>
+                )}
+              </Button>
+
               <p className="text-sm text-muted-foreground text-center">
                 Don't have an account?{' '}
                 <Link to="/signup" className="text-accent font-medium hover:underline">
