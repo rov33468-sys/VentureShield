@@ -25,24 +25,43 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [validSession, setValidSession] = useState<boolean | null>(null);
+  const [sessionState, setSessionState] = useState<SessionState>('checking');
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Supabase parses the recovery token from URL hash automatically and emits
-    // a PASSWORD_RECOVERY event. We treat the presence of a session as valid.
+    let resolved = false;
+
+    // Listen for the PASSWORD_RECOVERY event Supabase emits after parsing the
+    // recovery token from the URL hash.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || session) {
-        setValidSession(true);
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
+        resolved = true;
+        setSessionState('valid');
       }
     });
 
+    // Check existing session on mount.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setValidSession(!!session);
+      if (session) {
+        resolved = true;
+        setSessionState('valid');
+      }
     });
 
-    return () => subscription.unsubscribe();
+    // Give Supabase a moment to parse the URL hash and emit PASSWORD_RECOVERY
+    // before declaring the link invalid. Without this grace window we'd flash
+    // the "invalid" state on every valid recovery link.
+    const timeout = window.setTimeout(() => {
+      if (!resolved) {
+        setSessionState('invalid');
+      }
+    }, 1500);
+
+    return () => {
+      subscription.unsubscribe();
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
