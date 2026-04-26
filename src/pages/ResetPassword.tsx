@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { Shield, Lock, Loader2 } from 'lucide-react';
+import { Shield, Lock, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+
+type SessionState = 'checking' | 'valid' | 'invalid';
 
 const schema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(100, 'Password is too long'),
