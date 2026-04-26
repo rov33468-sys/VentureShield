@@ -1,120 +1,57 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  TrendingUp, 
-  TrendingDown,
-  Calendar,
-  BarChart3,
-  AlertCircle
-} from "lucide-react";
+import { BarChart3, CheckCircle, AlertCircle, XCircle, Calendar, Loader2 } from "lucide-react";
+
+type Prediction = {
+  id: string;
+  company_name: string | null;
+  industry: string | null;
+  summary: string | null;
+  risk_score: number | null;
+  risk_level: string | null;
+  confidence: number | null;
+  created_at: string;
+};
+
+const riskBadge = (level: string | null) => {
+  switch (level) {
+    case "low": return { color: "success" as const, icon: CheckCircle };
+    case "medium": return { color: "warning" as const, icon: AlertCircle };
+    case "high": return { color: "destructive" as const, icon: XCircle };
+    default: return { color: "secondary" as const, icon: AlertCircle };
+  }
+};
 
 const DecisionHistoryLog = () => {
-  const decisionHistory = [
-    {
-      id: 1,
-      decision: "Launch Premium Product Line",
-      predictedOutcome: 78,
-      actualOutcome: 85,
-      status: "success",
-      date: "2024-01-15",
-      accuracy: 91,
-      impact: "High",
-      category: "Product Strategy"
-    },
-    {
-      id: 2,
-      decision: "Expand to European Market",
-      predictedOutcome: 65,
-      actualOutcome: 58,
-      status: "partial",
-      date: "2024-02-03",
-      accuracy: 89,
-      impact: "Medium",
-      category: "Market Expansion"
-    },
-    {
-      id: 3,
-      decision: "Implement AI Customer Service",
-      predictedOutcome: 72,
-      actualOutcome: null,
-      status: "pending",
-      date: "2024-03-12",
-      accuracy: null,
-      impact: "Medium",
-      category: "Operations"
-    },
-    {
-      id: 4,
-      decision: "Strategic Partnership with TechCorp",
-      predictedOutcome: 45,
-      actualOutcome: 23,
-      status: "failure",
-      date: "2024-01-28",
-      accuracy: 49,
-      impact: "High",
-      category: "Partnerships"
-    },
-    {
-      id: 5,
-      decision: "Rebrand Company Identity",
-      predictedOutcome: 68,
-      actualOutcome: 76,
-      status: "success",
-      date: "2024-02-20",
-      accuracy: 88,
-      impact: "Low",
-      category: "Marketing"
-    }
-  ];
+  const [items, setItems] = useState<Prediction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'success':
-        return <CheckCircle className="h-4 w-4 text-success" />;
-      case 'failure':
-        return <XCircle className="h-4 w-4 text-destructive" />;
-      case 'partial':
-        return <AlertCircle className="h-4 w-4 text-warning" />;
-      case 'pending':
-        return <Clock className="h-4 w-4 text-muted-foreground" />;
-      default:
-        return <Clock className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("predictions")
+        .select("id, company_name, industry, summary, risk_score, risk_level, confidence, created_at")
+        .order("created_at", { ascending: false });
+      if (!mounted) return;
+      if (!error && data) setItems(data as Prediction[]);
+      setLoading(false);
+    })();
+    return () => { mounted = false; };
+  }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'success':
-        return 'success';
-      case 'failure':
-        return 'destructive';
-      case 'partial':
-        return 'warning';
-      case 'pending':
-        return 'secondary';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getOutcomeTrend = (predicted: number, actual: number | null) => {
-    if (actual === null) return null;
-    const diff = actual - predicted;
-    return diff > 0 ? 'up' : 'down';
-  };
-
-  const overallAccuracy = decisionHistory
-    .filter(d => d.accuracy !== null)
-    .reduce((acc, d) => acc + d.accuracy!, 0) / decisionHistory.filter(d => d.accuracy !== null).length;
+  const avgConfidence = items.length
+    ? Math.round(items.reduce((a, b) => a + (b.confidence ?? 0), 0) / items.length)
+    : 0;
+  const lowRisk = items.filter((i) => i.risk_level === "low").length;
+  const mediumRisk = items.filter((i) => i.risk_level === "medium").length;
+  const highRisk = items.filter((i) => i.risk_level === "high").length;
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
           <CardContent className="p-4">
@@ -123,13 +60,12 @@ const DecisionHistoryLog = () => {
                 <BarChart3 className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Overall Accuracy</p>
-                <p className="text-xl font-bold text-primary">{Math.round(overallAccuracy)}%</p>
+                <p className="text-sm font-medium text-muted-foreground">Avg. Confidence</p>
+                <p className="text-xl font-bold text-primary">{avgConfidence}%</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
@@ -137,31 +73,25 @@ const DecisionHistoryLog = () => {
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Successful Decisions</p>
-                <p className="text-xl font-bold text-success">
-                  {decisionHistory.filter(d => d.status === 'success').length}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Low Risk</p>
+                <p className="text-xl font-bold text-success">{lowRisk}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-warning/10 rounded-full flex items-center justify-center">
-                <Clock className="h-5 w-5 text-warning" />
+                <AlertCircle className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending Outcomes</p>
-                <p className="text-xl font-bold text-warning">
-                  {decisionHistory.filter(d => d.status === 'pending').length}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">Medium Risk</p>
+                <p className="text-xl font-bold text-warning">{mediumRisk}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-gradient-to-br from-destructive/10 to-destructive/5 border-destructive/20">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
@@ -169,109 +99,73 @@ const DecisionHistoryLog = () => {
                 <XCircle className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Failed Predictions</p>
-                <p className="text-xl font-bold text-destructive">
-                  {decisionHistory.filter(d => d.status === 'failure').length}
-                </p>
+                <p className="text-sm font-medium text-muted-foreground">High Risk</p>
+                <p className="text-xl font-bold text-destructive">{highRisk}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Decision History Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5" />
-              <span>Decision History & Outcomes</span>
-            </CardTitle>
-            <Button variant="outline" size="sm">
-              Export Report
-            </Button>
-          </div>
+          <CardTitle className="flex items-center space-x-2">
+            <Calendar className="h-5 w-5" />
+            <span>Prediction History</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {decisionHistory.map((decision) => (
-              <div key={decision.id} className="border rounded-lg p-4 hover:bg-secondary/20 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        {getStatusIcon(decision.status)}
+          {loading ? (
+            <div className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin text-accent mx-auto" /></div>
+          ) : items.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No predictions yet. Run an analysis to see results here.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {items.map((p) => {
+                const cfg = riskBadge(p.risk_level);
+                const Icon = cfg.icon;
+                return (
+                  <div key={p.id} className="border rounded-lg p-4 hover:bg-secondary/20 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <Icon className="h-4 w-4 text-accent" />
                         <div>
-                          <h4 className="font-semibold">{decision.decision}</h4>
+                          <h4 className="font-semibold">{p.company_name ?? "Untitled venture"}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {decision.category} • {new Date(decision.date).toLocaleDateString()}
+                            {(p.industry ?? "General")} • {new Date(p.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
-                      <Badge variant={getStatusColor(decision.status) as any} className="capitalize">
-                        {decision.status}
+                      <Badge variant={cfg.color as any} className="capitalize">
+                        {p.risk_level ?? "unknown"} risk
                       </Badge>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {p.summary && (
+                      <p className="text-sm text-muted-foreground mt-3">{p.summary}</p>
+                    )}
+                    <div className="grid grid-cols-2 gap-4 mt-3">
                       <div>
-                        <p className="text-xs text-muted-foreground">Predicted Outcome</p>
-                        <div className="flex items-center space-x-2">
-                          <Progress value={decision.predictedOutcome} className="h-2 flex-1" />
-                          <span className="text-sm font-medium">{decision.predictedOutcome}%</span>
+                        <p className="text-xs text-muted-foreground">Risk score</p>
+                        <div className="flex items-center gap-2">
+                          <Progress value={p.risk_score ?? 0} className="h-2 flex-1" />
+                          <span className="text-sm font-medium">{p.risk_score ?? 0}%</span>
                         </div>
                       </div>
-
                       <div>
-                        <p className="text-xs text-muted-foreground">Actual Outcome</p>
-                        <div className="flex items-center space-x-2">
-                          {decision.actualOutcome !== null ? (
-                            <>
-                              <Progress value={decision.actualOutcome} className="h-2 flex-1" />
-                              <span className="text-sm font-medium">{decision.actualOutcome}%</span>
-                              <div className="flex items-center">
-                                {getOutcomeTrend(decision.predictedOutcome, decision.actualOutcome) === 'up' ? (
-                                  <TrendingUp className="h-3 w-3 text-success" />
-                                ) : (
-                                  <TrendingDown className="h-3 w-3 text-destructive" />
-                                )}
-                              </div>
-                            </>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">Pending</span>
-                          )}
+                        <p className="text-xs text-muted-foreground">Confidence</p>
+                        <div className="flex items-center gap-2">
+                          <Progress value={p.confidence ?? 0} className="h-2 flex-1" />
+                          <span className="text-sm font-medium">{p.confidence ?? 0}%</span>
                         </div>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-muted-foreground">Prediction Accuracy</p>
-                        <div className="flex items-center space-x-2">
-                          {decision.accuracy !== null ? (
-                            <>
-                              <Progress value={decision.accuracy} className="h-2 flex-1" />
-                              <span className="text-sm font-medium">{decision.accuracy}%</span>
-                            </>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">TBD</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-muted-foreground">Business Impact</p>
-                        <Badge 
-                          variant={decision.impact === 'High' ? 'destructive' : decision.impact === 'Medium' ? 'outline' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {decision.impact}
-                        </Badge>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
