@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import { Shield, Lock, Loader2 } from 'lucide-react';
+import { Shield, Lock, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+
+type SessionState = 'checking' | 'valid' | 'invalid';
 
 const schema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(100, 'Password is too long'),
@@ -23,24 +25,43 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [validSession, setValidSession] = useState<boolean | null>(null);
+  const [sessionState, setSessionState] = useState<SessionState>('checking');
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Supabase parses the recovery token from URL hash automatically and emits
-    // a PASSWORD_RECOVERY event. We treat the presence of a session as valid.
+    let resolved = false;
+
+    // Listen for the PASSWORD_RECOVERY event Supabase emits after parsing the
+    // recovery token from the URL hash.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY' || session) {
-        setValidSession(true);
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
+        resolved = true;
+        setSessionState('valid');
       }
     });
 
+    // Check existing session on mount.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setValidSession(!!session);
+      if (session) {
+        resolved = true;
+        setSessionState('valid');
+      }
     });
 
-    return () => subscription.unsubscribe();
+    // Give Supabase a moment to parse the URL hash and emit PASSWORD_RECOVERY
+    // before declaring the link invalid. Without this grace window we'd flash
+    // the "invalid" state on every valid recovery link.
+    const timeout = window.setTimeout(() => {
+      if (!resolved) {
+        setSessionState('invalid');
+      }
+    }, 1500);
+
+    return () => {
+      subscription.unsubscribe();
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,30 +113,65 @@ export default function ResetPassword() {
 
         <Card className="border-border/50 bg-card/80 backdrop-blur-xl shadow-elegant">
           <CardHeader className="space-y-1.5">
-            <CardTitle className="text-2xl font-semibold">Set a new password</CardTitle>
+            <CardTitle className="text-2xl font-semibold flex items-center gap-2">
+              {sessionState === 'checking' && (
+                <Loader2 className="h-5 w-5 animate-spin text-accent" />
+              )}
+              {sessionState === 'valid' && (
+                <CheckCircle2 className="h-5 w-5 text-accent" />
+              )}
+              {sessionState === 'invalid' && (
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              )}
+              {sessionState === 'checking' && 'Verifying your link…'}
+              {sessionState === 'valid' && 'Set a new password'}
+              {sessionState === 'invalid' && 'Link no longer valid'}
+            </CardTitle>
             <CardDescription>
-              Choose a strong password with at least 8 characters.
+              {sessionState === 'checking' &&
+                'Hang tight while we confirm your password reset link.'}
+              {sessionState === 'valid' &&
+                'Choose a strong password with at least 8 characters.'}
+              {sessionState === 'invalid' &&
+                'For your security, reset links expire after a short time or can only be used once.'}
             </CardDescription>
           </CardHeader>
 
-          {validSession === false ? (
+          {sessionState === 'checking' && (
+            <CardContent className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <p className="text-sm text-muted-foreground">
+                Checking recovery session…
+              </p>
+            </CardContent>
+          )}
+
+          {sessionState === 'invalid' && (
             <>
               <CardContent>
                 <Alert variant="destructive" className="border-destructive/50">
+                  <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
-                    This reset link is invalid or has expired. Please request a new one.
+                    This reset link is invalid or has expired. Please request a new one to continue.
                   </AlertDescription>
                 </Alert>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex flex-col gap-2">
                 <Link to="/forgot-password" className="w-full">
-                  <Button className="w-full gradient-accent text-accent-foreground font-semibold">
+                  <Button className="w-full gradient-accent text-accent-foreground font-semibold shadow-accent hover:shadow-glow transition-smooth">
                     Request new link
+                  </Button>
+                </Link>
+                <Link to="/login" className="w-full">
+                  <Button variant="ghost" className="w-full text-muted-foreground hover:text-foreground">
+                    Back to sign in
                   </Button>
                 </Link>
               </CardFooter>
             </>
-          ) : (
+          )}
+
+          {sessionState === 'valid' && (
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
                 {error && (
@@ -161,7 +217,7 @@ export default function ResetPassword() {
               <CardFooter>
                 <Button
                   type="submit"
-                  disabled={loading || validSession === null}
+                  disabled={loading}
                   className="w-full gradient-accent text-accent-foreground font-semibold shadow-accent hover:shadow-glow transition-smooth"
                 >
                   {loading ? (
