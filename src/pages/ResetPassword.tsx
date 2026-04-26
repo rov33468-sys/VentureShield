@@ -113,30 +113,65 @@ export default function ResetPassword() {
 
         <Card className="border-border/50 bg-card/80 backdrop-blur-xl shadow-elegant">
           <CardHeader className="space-y-1.5">
-            <CardTitle className="text-2xl font-semibold">Set a new password</CardTitle>
+            <CardTitle className="text-2xl font-semibold flex items-center gap-2">
+              {sessionState === 'checking' && (
+                <Loader2 className="h-5 w-5 animate-spin text-accent" />
+              )}
+              {sessionState === 'valid' && (
+                <CheckCircle2 className="h-5 w-5 text-accent" />
+              )}
+              {sessionState === 'invalid' && (
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              )}
+              {sessionState === 'checking' && 'Verifying your link…'}
+              {sessionState === 'valid' && 'Set a new password'}
+              {sessionState === 'invalid' && 'Link no longer valid'}
+            </CardTitle>
             <CardDescription>
-              Choose a strong password with at least 8 characters.
+              {sessionState === 'checking' &&
+                'Hang tight while we confirm your password reset link.'}
+              {sessionState === 'valid' &&
+                'Choose a strong password with at least 8 characters.'}
+              {sessionState === 'invalid' &&
+                'For your security, reset links expire after a short time or can only be used once.'}
             </CardDescription>
           </CardHeader>
 
-          {validSession === false ? (
+          {sessionState === 'checking' && (
+            <CardContent className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              <p className="text-sm text-muted-foreground">
+                Checking recovery session…
+              </p>
+            </CardContent>
+          )}
+
+          {sessionState === 'invalid' && (
             <>
               <CardContent>
                 <Alert variant="destructive" className="border-destructive/50">
+                  <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
-                    This reset link is invalid or has expired. Please request a new one.
+                    This reset link is invalid or has expired. Please request a new one to continue.
                   </AlertDescription>
                 </Alert>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex flex-col gap-2">
                 <Link to="/forgot-password" className="w-full">
-                  <Button className="w-full gradient-accent text-accent-foreground font-semibold">
+                  <Button className="w-full gradient-accent text-accent-foreground font-semibold shadow-accent hover:shadow-glow transition-smooth">
                     Request new link
+                  </Button>
+                </Link>
+                <Link to="/login" className="w-full">
+                  <Button variant="ghost" className="w-full text-muted-foreground hover:text-foreground">
+                    Back to sign in
                   </Button>
                 </Link>
               </CardFooter>
             </>
-          ) : (
+          )}
+
+          {sessionState === 'valid' && (
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
                 {error && (
@@ -182,7 +217,7 @@ export default function ResetPassword() {
               <CardFooter>
                 <Button
                   type="submit"
-                  disabled={loading || validSession === null}
+                  disabled={loading}
                   className="w-full gradient-accent text-accent-foreground font-semibold shadow-accent hover:shadow-glow transition-smooth"
                 >
                   {loading ? (
