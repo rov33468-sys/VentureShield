@@ -56,7 +56,15 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a business opportunity researcher. Given a search query, return 4-6 realistic business opportunities as JSON.`,
+            content: `You are a business opportunity researcher for VentureShield. Given a search query (industry, niche, or theme), return 4-6 realistic, differentiated business opportunities — not generic categories.
+
+Rules:
+- Each opportunity must be a SPECIFIC business concept (e.g. "B2B carbon-accounting SaaS for SMB manufacturers"), not a vague vertical ("green tech").
+- marketSize: include a number with units (e.g. "$4.2B globally, 12% CAGR").
+- competition: name the type of incumbents and saturation ("Crowded — dominated by HubSpot, Salesforce" / "Emerging — few specialized players").
+- investmentRange: realistic seed-to-Series A range (e.g. "$50K – $500K to launch MVP").
+- growthPotential: High / Medium / Low based on market trends, not hype.
+- Avoid duplicates and keep ideas spread across business models (SaaS, marketplace, services, hardware, D2C).`,
           },
           { role: "user", content: `Find business opportunities for: "${query.trim()}"` },
         ],
