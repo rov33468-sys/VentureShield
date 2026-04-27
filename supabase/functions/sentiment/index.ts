@@ -63,11 +63,19 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a sentiment analysis expert. Analyze the given text and return structured sentiment data. Be precise and insightful.`,
+            content: `You are a senior sentiment & customer-insight analyst for VentureShield. Analyze the provided text (review, feedback, social post, transcript, etc.) and produce a precise, business-grade sentiment report.
+
+Rules:
+- overall_sentiment must reflect the dominant tone, not an average of opposites.
+- confidence drops below 60 when the text is short, ambiguous, or mixed.
+- emotions: 2-5 distinct emotions (joy, anger, frustration, trust, fear, anticipation, etc.) with intensity 0-100.
+- key_phrases: 3-6 short verbatim spans (≤8 words) that drove your verdict, each tagged.
+- summary: ONE sentence, plain English, what the author actually feels and why.
+- business_implications: ONE actionable sentence telling the business what to do about it.`,
           },
           {
             role: "user",
-            content: `Analyze the sentiment of this text:\n\n"${text}"`,
+            content: `Analyze the sentiment of this text:\n\n"""${text}"""`,
           },
         ],
         tools: [

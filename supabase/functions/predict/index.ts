@@ -130,38 +130,37 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `You are an AI business analyst expert. Analyze the provided business idea and company metrics to predict business success/failure risk.
+    const systemPrompt = `You are VentureShield's senior AI risk analyst. You evaluate startup and business viability with the rigor of a venture capital partner combined with a forensic financial auditor.
 
-Your analysis should:
-1. Calculate a risk_score (0-100, where 0 is lowest risk and 100 is highest risk of failure)
-2. Provide a confidence level (0-100) for your assessment
-3. Write a concise 2-sentence summary of the business outlook
-4. Generate exactly 3 actionable recommendations for improvement
+SCORING METHODOLOGY (apply consistently):
+- risk_score (0-100): Probability the venture FAILS within 24 months. 0 = bulletproof, 100 = imminent collapse.
+  • 0-25  = low risk: strong unit economics, healthy cash flow, growing market
+  • 26-55 = medium risk: viable but with material weaknesses
+  • 56-100 = high risk: serious red flags or insufficient information
+- confidence (0-100): How much the provided data supports your conclusion. If metrics are missing or vague, confidence MUST drop below 60.
+- risk_level: Map directly from risk_score using the bands above.
 
-Consider these factors in your analysis:
-- Financial health (revenue, expenses, cash flow, debt ratio)
-- Market conditions (industry, market growth)
-- Operational metrics (employee turnover)
-- Innovation capability (innovation score)
+EVALUATION FRAMEWORK — weigh these dimensions:
+1. Financial health: revenue vs expenses, cash flow runway, debt_ratio (>60% is concerning)
+2. Market dynamics: market_growth (<3% is stagnant, >15% is hot), industry maturity
+3. Operations: employee_turnover (>25% is a culture/leadership red flag)
+4. Innovation moat: innovation_score (<40 means commoditization risk)
+5. Idea–market fit: does the business idea match the metrics and industry?
 
-Return ONLY valid JSON with this exact structure:
-{
-  "risk_score": number,
-  "confidence": number,
-  "risk_level": "low" | "medium" | "high",
-  "summary": "string",
-  "recommendations": ["string", "string", "string"]
-}`;
+OUTPUT RULES:
+- summary: 2 crisp sentences. First sentence states the verdict; second sentence names the single most important driver.
+- recommendations: EXACTLY 3 specific, actionable next steps. No platitudes ("work harder"). Each must reference a concrete metric, channel, or experiment.
+- If data is sparse, say so explicitly in the summary and lower confidence — do NOT fabricate optimism.`;
 
     const userPrompt = `Business Idea: ${sanitizedBusinessIdea}
 
 Company Metrics:
 ${companyData ? JSON.stringify(companyData, null, 2) : 'No specific metrics provided yet'}
 
-Analyze this business and provide your assessment.`;
+Produce your risk assessment by calling the report_risk_assessment tool.`;
 
     console.log('Calling Lovable AI for prediction...');
-    
+
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -169,19 +168,45 @@ Analyze this business and provide your assessment.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.7,
+        tools: [
+          {
+            type: 'function',
+            function: {
+              name: 'report_risk_assessment',
+              description: 'Return the structured risk assessment for the venture.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  risk_score: { type: 'number', description: 'Failure probability 0-100' },
+                  confidence: { type: 'number', description: 'Confidence in the assessment 0-100' },
+                  risk_level: { type: 'string', enum: ['low', 'medium', 'high'] },
+                  summary: { type: 'string', description: 'Two-sentence verdict' },
+                  recommendations: {
+                    type: 'array',
+                    minItems: 3,
+                    maxItems: 3,
+                    items: { type: 'string' },
+                  },
+                },
+                required: ['risk_score', 'confidence', 'risk_level', 'summary', 'recommendations'],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: 'function', function: { name: 'report_risk_assessment' } },
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI Gateway Error:', aiResponse.status, errorText);
-      
+
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), {
           status: 429,
@@ -194,32 +219,49 @@ Analyze this business and provide your assessment.`;
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      
+
       throw new Error(`AI Gateway error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    const aiContent = aiData.choices[0].message.content;
-    
-    console.log('AI Response:', aiContent);
-    
-    // Parse the AI response
-    let prediction;
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+
+    let prediction: {
+      risk_score: number;
+      confidence: number;
+      risk_level: 'low' | 'medium' | 'high';
+      summary: string;
+      recommendations: string[];
+    };
+
     try {
-      prediction = JSON.parse(aiContent);
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      // Provide a fallback response
-      prediction = {
-        risk_score: 50,
-        confidence: 60,
-        risk_level: 'medium',
-        summary: 'Analysis pending. Please provide more detailed business metrics for accurate prediction.',
-        recommendations: [
+      if (!toolCall?.function?.arguments) throw new Error('Missing tool call');
+      prediction = JSON.parse(toolCall.function.arguments);
+      // Clamp & normalize
+      prediction.risk_score = Math.max(0, Math.min(100, Number(prediction.risk_score) || 50));
+      prediction.confidence = Math.max(0, Math.min(100, Number(prediction.confidence) || 60));
+      if (!['low', 'medium', 'high'].includes(prediction.risk_level)) {
+        prediction.risk_level = prediction.risk_score <= 25 ? 'low' : prediction.risk_score <= 55 ? 'medium' : 'high';
+      }
+      if (!Array.isArray(prediction.recommendations) || prediction.recommendations.length === 0) {
+        prediction.recommendations = [
           'Provide detailed financial metrics for better analysis',
           'Include market research data',
-          'Define clear business objectives'
-        ]
+          'Define clear business objectives',
+        ];
+      }
+    } catch (parseError) {
+      console.error('Failed to parse AI tool call:', parseError);
+      prediction = {
+        risk_score: 50,
+        confidence: 50,
+        risk_level: 'medium',
+        summary: 'Analysis pending. Insufficient structured data to produce a confident verdict.',
+        recommendations: [
+          'Provide detailed financial metrics (revenue, expenses, cash flow)',
+          'Add market context (industry, growth rate, competition)',
+          'Clarify the core value proposition and target customer',
+        ],
       };
     }
 
