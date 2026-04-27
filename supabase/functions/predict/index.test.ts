@@ -36,3 +36,45 @@ Deno.test("predict: empty Authorization header returns 401", async () => {
   assertEquals(res.status, 401);
   assertEquals(body, { error: "Unauthorized" });
 });
+
+Deno.test("predict: no auth + empty body returns 401 (not 400)", async () => {
+  const res = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "",
+  });
+  const body = await res.json();
+  assertEquals(res.status, 401);
+  assertEquals(body, { error: "Unauthorized" });
+});
+
+Deno.test("predict: no auth + malformed JSON body returns 401 (not 400)", async () => {
+  const res = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{not valid json",
+  });
+  const body = await res.json();
+  assertEquals(res.status, 401);
+  assertEquals(body, { error: "Unauthorized" });
+});
+
+Deno.test("predict: no auth + no body at all returns 401 (not 400)", async () => {
+  const res = await fetch(FUNCTION_URL, {
+    method: "POST",
+  });
+  const body = await res.json();
+  assertEquals(res.status, 401);
+  assertEquals(body, { error: "Unauthorized" });
+});
+
+Deno.test("predict: bogus Bearer token + malformed body returns 401 (not 400/500)", async () => {
+  const res = await fetch(FUNCTION_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer not-a-real-jwt" },
+    body: "{not valid json",
+  });
+  const body = await res.json();
+  assertEquals(res.status, 401);
+  assertEquals(body, { error: "Unauthorized" });
+});
