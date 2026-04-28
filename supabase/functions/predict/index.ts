@@ -56,92 +56,43 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub;
 
-    // Input validation and sanitization
-    const requestBody = await req.json();
-    const { businessIdea, companyData } = requestBody;
-
-    // Validate businessIdea
-    if (!businessIdea || typeof businessIdea !== 'string') {
-      return new Response(JSON.stringify({ error: 'Invalid businessIdea: must be a non-empty string' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (businessIdea.length > 2000) {
-      return new Response(JSON.stringify({ error: 'businessIdea exceeds maximum length of 2000 characters' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Sanitize businessIdea (remove potential XSS)
-    const sanitizedBusinessIdea = businessIdea.trim().replace(/[<>]/g, '');
-
-    // Validate companyData if provided
-    if (companyData) {
-      if (typeof companyData !== 'object' || Array.isArray(companyData)) {
-        return new Response(JSON.stringify({ error: 'Invalid companyData: must be an object' }), {
+    // User is authenticated — now validate body strictly. Malformed/empty -> 400.
+    let rawBody: unknown;
+    try {
+      const text = await req.text();
+      if (!text || text.trim() === '') {
+        return new Response(JSON.stringify({ error: 'Validation failed', details: 'Request body is empty' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      // Validate string fields
-      const stringFields = ['company_name', 'industry'];
-      for (const field of stringFields) {
-        if (companyData[field]) {
-          if (typeof companyData[field] !== 'string') {
-            return new Response(JSON.stringify({ error: `${field} must be a string` }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-          if (companyData[field].length > 200) {
-            return new Response(JSON.stringify({ error: `${field} exceeds maximum length of 200 characters` }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-          // Sanitize string fields
-          companyData[field] = companyData[field].trim().replace(/[<>]/g, '');
-        }
-      }
-
-      // Validate numeric fields
-      const numericFields = ['revenue', 'expenses', 'cash_flow', 'debt_ratio', 'market_growth', 'employee_turnover', 'innovation_score'];
-      for (const field of numericFields) {
-        if (companyData[field] !== undefined && companyData[field] !== null) {
-          const value = Number(companyData[field]);
-          if (isNaN(value) || !isFinite(value)) {
-            return new Response(JSON.stringify({ error: `${field} must be a valid number` }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-          // Range validation for percentages
-          if (['debt_ratio', 'market_growth', 'employee_turnover', 'innovation_score'].includes(field)) {
-            if (value < 0 || value > 100) {
-              return new Response(JSON.stringify({ error: `${field} must be between 0 and 100` }), {
-                status: 400,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              });
-            }
-          }
-          // Range validation for financial fields
-          if (['revenue', 'expenses', 'cash_flow'].includes(field)) {
-            if (value < -1000000000 || value > 1000000000000) {
-              return new Response(JSON.stringify({ error: `${field} is out of acceptable range` }), {
-                status: 400,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              });
-            }
-          }
-          companyData[field] = value;
-        }
-      }
+      rawBody = JSON.parse(text);
+    } catch (_e) {
+      return new Response(JSON.stringify({ error: 'Validation failed', details: 'Malformed JSON body' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
-    
+
+    const parsed = PredictRequestSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({
+        error: 'Validation failed',
+        details: parsed.error.flatten().fieldErrors,
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { businessIdea, companyData } = parsed.data;
+    // Sanitize string fields (strip angle brackets to mitigate XSS in downstream rendering)
+    const sanitizedBusinessIdea = businessIdea.replace(/[<>]/g, '');
+    if (companyData) {
+      if (companyData.company_name) companyData.company_name = companyData.company_name.replace(/[<>]/g, '');
+      if (companyData.industry) companyData.industry = companyData.industry.replace(/[<>]/g, '');
+    }
+
     // Service-role client for DB writes
     const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
