@@ -3,6 +3,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import { z } from 'https://esm.sh/zod@3.23.8';
 
+// Schema version for predict request/response contract.
+// Bump when fields are added/removed/renamed so the frontend can react.
+export const PREDICT_SCHEMA_VERSION = '1.0.0';
+
 // Strict schema for predict request body
 const CompanyDataSchema = z.object({
   company_name: z.string().trim().max(200, 'company_name exceeds maximum length of 200 characters').optional(),
