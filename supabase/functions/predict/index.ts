@@ -1,6 +1,25 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
+import { z } from 'https://esm.sh/zod@3.23.8';
+
+// Strict schema for predict request body
+const CompanyDataSchema = z.object({
+  company_name: z.string().trim().max(200, 'company_name exceeds maximum length of 200 characters').optional(),
+  industry: z.string().trim().max(200, 'industry exceeds maximum length of 200 characters').optional(),
+  revenue: z.number().finite().min(-1_000_000_000).max(1_000_000_000_000).optional().nullable(),
+  expenses: z.number().finite().min(-1_000_000_000).max(1_000_000_000_000).optional().nullable(),
+  cash_flow: z.number().finite().min(-1_000_000_000).max(1_000_000_000_000).optional().nullable(),
+  debt_ratio: z.number().finite().min(0).max(100).optional().nullable(),
+  market_growth: z.number().finite().min(0).max(100).optional().nullable(),
+  employee_turnover: z.number().finite().min(0).max(100).optional().nullable(),
+  innovation_score: z.number().finite().min(0).max(100).optional().nullable(),
+}).strict();
+
+const PredictRequestSchema = z.object({
+  businessIdea: z.string().trim().min(1, 'businessIdea is required').max(2000, 'businessIdea exceeds maximum length of 2000 characters'),
+  companyData: CompanyDataSchema.optional(),
+}).strict();
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
