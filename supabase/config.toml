@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.sentiment]
 verify_jwt = false
+
+[functions.predict-schema]
+verify_jwt = false

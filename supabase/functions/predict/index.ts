@@ -3,6 +3,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.0';
 import { z } from 'https://esm.sh/zod@3.23.8';
 
+// Schema version for predict request/response contract.
+// Bump when fields are added/removed/renamed so the frontend can react.
+export const PREDICT_SCHEMA_VERSION = '1.0.0';
+
 // Strict schema for predict request body
 const CompanyDataSchema = z.object({
   company_name: z.string().trim().max(200, 'company_name exceeds maximum length of 200 characters').optional(),
@@ -271,7 +275,8 @@ Produce your risk assessment by calling the report_risk_assessment tool.`;
     return new Response(JSON.stringify({
       ...prediction,
       id: savedPrediction.id,
-      created_at: savedPrediction.created_at
+      created_at: savedPrediction.created_at,
+      schema_version: PREDICT_SCHEMA_VERSION,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
