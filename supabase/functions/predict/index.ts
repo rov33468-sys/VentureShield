@@ -275,7 +275,8 @@ Produce your risk assessment by calling the report_risk_assessment tool.`;
     return new Response(JSON.stringify({
       ...prediction,
       id: savedPrediction.id,
-      created_at: savedPrediction.created_at
+      created_at: savedPrediction.created_at,
+      schema_version: PREDICT_SCHEMA_VERSION,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
