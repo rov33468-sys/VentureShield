@@ -78,3 +78,8 @@ Deno.test("predict: bogus Bearer token + malformed body returns 401 (not 400/500
   assertEquals(res.status, 401);
   assertEquals(body, { error: "Unauthorized" });
 });
+
+// Note: 400 validation responses require a valid JWT (auth runs first).
+// These contract tests verify auth-first behavior; authenticated 400 paths
+// are exercised via the app and manual curl_edge_functions calls.
+
